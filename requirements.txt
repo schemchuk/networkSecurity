@@ -1,4 +1,5 @@
 pydantic>=2
 pyyaml
 ollama
+python-libnmap
 pytest
