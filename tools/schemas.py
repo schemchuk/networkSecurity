@@ -90,3 +90,12 @@ class Manifest(BaseModel):
     targets: list[str]
     operator: str
     tool_versions: dict[str, str] = {}
+
+
+class CommandLogEntry(BaseModel):
+    """A single logged command executed during a lab session."""
+
+    ts: datetime
+    cwd: str
+    cmd: str
+    exit_code: int

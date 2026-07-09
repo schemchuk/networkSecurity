@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# labshell — start a logged lab session for a given scenario.
+#
+# Usage:
+#   scripts/labshell <scenario> [targets] [operator]
+#
+# Example:
+#   scripts/labshell recon-test 10.10.10.5 shemchuk
+
+set -euo pipefail
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <scenario> [targets] [operator]" >&2
+    exit 1
+fi
+
+SCENARIO="$1"
+TARGETS="${2:-}"
+OPERATOR="${3:-${USER:-unknown}}"
+
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPTS_DIR/.." && pwd)"
+
+RUN_ID="$("$SCRIPTS_DIR/new_run.py" --scenario "$SCENARIO" --targets "$TARGETS" --operator "$OPERATOR")"
+
+export AILAB_RUN_ID="$RUN_ID"
+export AILAB_CMDLOG="$PROJECT_ROOT/logs/$RUN_ID/commands.jsonl"
+export AILAB_SCRIPTS="$SCRIPTS_DIR"
+
+RCFILE="$SCRIPTS_DIR/labshell_rc.sh"
+
+if command -v asciinema >/dev/null 2>&1; then
+    CAST_FILE="$PROJECT_ROOT/logs/$RUN_ID/session.cast"
+    echo "Recording session to $CAST_FILE" >&2
+    asciinema rec "$CAST_FILE" -c "bash --rcfile \"$RCFILE\""
+else
+    echo "asciinema not found; starting plain logged shell" >&2
+    bash --rcfile "$RCFILE"
+fi

@@ -1,6 +1,7 @@
 *.pyc
 __pycache__/
-logs/*.log
+logs/
+runs/
 *.env
 models/
 venv/
