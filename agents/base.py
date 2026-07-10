@@ -32,7 +32,14 @@ class BaseAgent:
         self.run_id = run_id
         self.run_dir = Path(runs_dir) / run_id
         self.run_dir.mkdir(parents=True, exist_ok=True)
-        self.llm = llm if llm is not None else LLMClient()
+        self._llm = llm
+
+    @property
+    def llm(self) -> LLMClient:
+        """Return the LLM client, creating it lazily on first access."""
+        if self._llm is None:
+            self._llm = LLMClient()
+        return self._llm
 
     def emit_event(
         self,
