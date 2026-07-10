@@ -4,3 +4,6 @@ model: "qwen2.5-coder:7b"
 embed_model: "nomic-embed-text"
 context_tokens: 8192
 temperature: 0.2
+# Seconds to wait for an Ollama request. Raise on slow hardware where 7B
+# inference can take minutes per call; a hit becomes a tolerated LLMError.
+request_timeout: 300

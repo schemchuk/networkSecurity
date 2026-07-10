@@ -26,7 +26,7 @@ def _fake_config() -> ModelConfig:
 def _patched_client(monkeypatch, chat_return_value) -> LLMClient:
     mock_instance = MagicMock()
     mock_instance.chat.return_value = chat_return_value
-    monkeypatch.setattr("ollama.Client", lambda host: mock_instance)
+    monkeypatch.setattr("ollama.Client", lambda *args, **kwargs: mock_instance)
     return LLMClient(config=_fake_config()), mock_instance
 
 

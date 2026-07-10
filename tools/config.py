@@ -18,6 +18,7 @@ class ModelConfig(BaseModel):
     embed_model: str
     context_tokens: int
     temperature: float
+    request_timeout: float = 300.0
 
 
 def load_model_config(path: str = "configs/model.yaml") -> ModelConfig:

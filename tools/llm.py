@@ -38,7 +38,9 @@ class LLMClient:
             config: Model configuration. If ``None``, loads ``configs/model.yaml``.
         """
         self.config = config if config is not None else load_model_config()
-        self.client = ollama.Client(host=self.config.host)
+        self.client = ollama.Client(
+            host=self.config.host, timeout=self.config.request_timeout
+        )
 
     def _build_messages(self, prompt: str, system: str | None = None) -> list[dict]:
         messages: list[dict] = []
