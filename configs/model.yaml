@@ -1,6 +1,6 @@
 backend: ollama
 host: "http://localhost:11434"
-model: "qwen2.5-coder:7b"
+model: "qwen2.5:3b"
 embed_model: "nomic-embed-text"
 context_tokens: 8192
 temperature: 0.2

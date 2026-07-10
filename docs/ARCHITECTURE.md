@@ -273,7 +273,7 @@ networkSecurity/
 | Шар | Вибір | Чому |
 |---|---|---|
 | LLM runtime | **Ollama** | вже стоїть, офлайн, простий API |
-| Модель | **qwen2.5-coder:7b** | під твоє залізо; сильна в структурованому виводі/JSON |
+| Модель | **qwen2.5:3b** (recon) | A/B на слабкому залізі: 91% vs 35% completion, ~2× швидше за 7B — див. [benchmarks](benchmarks/model-selection-recon.md) |
 | Embeddings | `nomic-embed-text` (Ollama) | офлайн, легкий |
 | Vector DB | **Chroma** | простий локальний старт (Qdrant — пізніше за потреби) |
 | Оркестрація | власний DAG → **LangGraph** (M4+) | не роздувати фреймворк рано |
