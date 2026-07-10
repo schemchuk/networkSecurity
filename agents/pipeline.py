@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from agents.recon import ReconAgent
+from agents.vuln_analysis import VulnAnalysisAgent
+from tools.cve_lookup import search_cves
 from tools.nmap_parser import parse_nmap_xml
 from tools.report_render import write_report
 from tools.schemas import Manifest
@@ -20,19 +22,22 @@ def run_recon_pipeline(
     run_id: str,
     runs_dir: str | Path = "runs",
     llm: "LLMClient" | None = None,
+    cve_lookup=None,
 ) -> Path:
     """Run the full recon pipeline on an nmap XML file.
 
     Steps:
         1. Parse the nmap XML into raw ``Finding`` objects.
         2. Enrich findings with the Recon agent (LLM summaries + next steps).
-        3. Render and write a Markdown report to ``runs/<run_id>/report.md``.
+        3. Enrich findings with the Vuln Analysis agent (real CVEs, severity, priority).
+        4. Render and write a Markdown report to ``runs/<run_id>/report.md``.
 
     Args:
-        nmap_path: Path to the nmap XML output.
+        nmap_path: Path to the nmap XML output file.
         run_id: Unique identifier for this run.
         runs_dir: Root directory containing run subdirectories.
         llm: Optional LLM client for testing; otherwise the Recon agent creates one.
+        cve_lookup: Optional CVE lookup callable. Defaults to ``search_cves``.
 
     Returns:
         Path to the generated ``report.md``.
@@ -43,8 +48,15 @@ def run_recon_pipeline(
 
     findings = parse_nmap_xml(nmap_path)
 
-    agent = ReconAgent(run_id, runs_dir=runs_dir, llm=llm)
-    enriched = agent.run(findings)
+    recon_agent = ReconAgent(run_id, runs_dir=runs_dir, llm=llm)
+    enriched = recon_agent.run(findings)
+
+    vuln_agent = VulnAnalysisAgent(
+        run_id,
+        runs_dir=runs_dir,
+        cve_lookup=cve_lookup or search_cves,
+    )
+    vuln_agent.run(enriched)
 
     manifest: Manifest | None = None
     manifest_path = run_dir / "manifest.json"

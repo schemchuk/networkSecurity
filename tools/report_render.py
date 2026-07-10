@@ -16,6 +16,13 @@ def _escape_pipe(value: str | None) -> str:
     return str(value).replace("|", "\\|")
 
 
+def _priority_key(finding: "Finding") -> tuple[bool, int, str]:
+    """Sort key for findings: lower priority first, ``None`` last."""
+    if finding.priority is None:
+        return (True, 0, finding.id)
+    return (False, finding.priority, finding.id)
+
+
 def render_report(
     findings: list["Finding"],
     manifest: "Manifest" | None = None,
@@ -52,18 +59,21 @@ def render_report(
         [
             "## Summary",
             "",
-            "| ID | Host | Port | Service | Product | Version | Severity |",
-            "|---|---|---|---|---|---|---|",
+            "| ID | Priority | Host | Port | Service | Product | Version | Severity |",
+            "|---|---|---|---|---|---|---|---|",
         ]
     )
 
-    if findings:
-        for finding in findings:
+    display_findings = sorted(findings, key=_priority_key)
+
+    if display_findings:
+        for finding in display_findings:
             lines.append(
                 "| "
                 + " | ".join(
                     [
                         _escape_pipe(finding.id),
+                        str(finding.priority) if finding.priority is not None else "",
                         _escape_pipe(finding.host),
                         str(finding.port) if finding.port is not None else "",
                         _escape_pipe(finding.service),
@@ -75,7 +85,7 @@ def render_report(
                 + " |"
             )
     else:
-        lines.append("| — | — | — | — | — | — | — |")
+        lines.append("| — | — | — | — | — | — | — | — |")
 
     lines.extend(
         [
@@ -85,8 +95,8 @@ def render_report(
         ]
     )
 
-    if findings:
-        for finding in findings:
+    if display_findings:
+        for finding in display_findings:
             protocol = finding.protocol or ""
             port = finding.port if finding.port is not None else ""
             lines.append(
