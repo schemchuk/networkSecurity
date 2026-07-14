@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from agents.base import BaseAgent
 from tools.llm import LLMError
@@ -21,6 +21,25 @@ class HardeningAdvice(BaseModel):
 
     mitigation: str
     detection: str
+
+    @field_validator("mitigation", "detection", mode="before")
+    @classmethod
+    def _coerce_to_str(cls, value: object) -> str:
+        """Flatten non-string values into a readable string.
+
+        Small models in JSON mode (e.g. qwen2.5:3b) sometimes emit these fields
+        as nested objects/lists instead of a plain string. Coerce gracefully so
+        a valid response is not discarded over formatting.
+        """
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            if "description" in value:
+                return str(value["description"])
+            return "; ".join(f"{k}: {v}" for k, v in value.items())
+        if isinstance(value, (list, tuple)):
+            return "; ".join(str(item) for item in value)
+        return str(value)
 
 
 HARDENING_SYSTEM_PROMPT = (

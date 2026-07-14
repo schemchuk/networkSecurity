@@ -161,3 +161,16 @@ def test_writes_findings_json(
     restored = [Finding.model_validate(item) for item in raw]
     assert len(restored) == 2
     assert restored[1].id == "F-0002"
+
+
+def test_advice_coerces_nested_objects() -> None:
+    # qwen2.5:3b in JSON mode may return fields as objects/lists, not strings.
+    advice = HardeningAdvice.model_validate(
+        {
+            "mitigation": {"type": "disable", "description": "Disable anonymous FTP."},
+            "detection": ["Watch auth logs", "IDS rule for CVE-2011-2523"],
+        }
+    )
+    assert advice.mitigation == "Disable anonymous FTP."
+    assert "Watch auth logs" in advice.detection
+    assert isinstance(advice.detection, str)
