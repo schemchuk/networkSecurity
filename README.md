@@ -83,7 +83,7 @@ python scripts/run.py --nmap /tmp/scan.xml --scenario recon-lab --targets <IP>
 Опційно: `scripts/labshell <scenario>` — залогована сесія (кожна команда → `commands.jsonl`,
 + asciinema-каст) для відтворюваності.
 
-Тести: `pytest -q` (37, повністю офлайн — LLM і searchsploit мокаються).
+Тести: `pytest -q` (38, повністю офлайн — LLM і searchsploit мокаються).
 
 ---
 
@@ -95,7 +95,8 @@ python scripts/run.py --nmap /tmp/scan.xml --scenario recon-lab --targets <IP>
 | M1 — MVP recon (parser → агент → звіт) | ✅ |
 | M2 — vuln-аналіз (реальні CVE, severity, пріоритет) | ✅ |
 | M3 — hardening/detection advisor | ✅ |
-| M5 — портфоліо-поліш | 🔜 |
+| M5 — портфоліо-поліш (README, sample, бенчмарк) | ✅ |
+| M2.4 RAG · M4 оркестрація | ⏸️ відкладено до апгрейду заліза |
 
 Перевірено на реальному прогоні проти Metasploitable2 (живі CVE: vsftpd, UnrealIRCd,
 telnet, VNC тощо).
