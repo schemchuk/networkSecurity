@@ -121,6 +121,14 @@ def render_report(
                     "**CVEs:** " + ", ".join(cve.id for cve in finding.cves)
                 )
 
+            if finding.mitigation:
+                lines.append("")
+                lines.append(f"**Mitigation:** {finding.mitigation}")
+
+            if finding.detection:
+                lines.append("")
+                lines.append(f"**Detection:** {finding.detection}")
+
             lines.append("")
     else:
         lines.append("_No open services found._")

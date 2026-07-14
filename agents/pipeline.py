@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from agents.hardening import HardeningAgent
 from agents.recon import ReconAgent
 from agents.vuln_analysis import VulnAnalysisAgent
 from tools.cve_lookup import search_cves
@@ -30,7 +31,8 @@ def run_recon_pipeline(
         1. Parse the nmap XML into raw ``Finding`` objects.
         2. Enrich findings with the Recon agent (LLM summaries + next steps).
         3. Enrich findings with the Vuln Analysis agent (real CVEs, severity, priority).
-        4. Render and write a Markdown report to ``runs/<run_id>/report.md``.
+        4. Enrich findings with the Hardening agent (mitigation + detection advice).
+        5. Render and write a Markdown report to ``runs/<run_id>/report.md``.
 
     Args:
         nmap_path: Path to the nmap XML output file.
@@ -57,6 +59,8 @@ def run_recon_pipeline(
         cve_lookup=cve_lookup or search_cves,
     )
     vuln_agent.run(enriched)
+
+    HardeningAgent(run_id, runs_dir=runs_dir, llm=llm).run(enriched)
 
     manifest: Manifest | None = None
     manifest_path = run_dir / "manifest.json"

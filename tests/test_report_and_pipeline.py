@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from agents.hardening import HardeningAdvice
 from agents.pipeline import run_recon_pipeline
 from agents.recon import ReconEnrichment
 from tools.report_render import render_report
@@ -104,6 +105,11 @@ def _fake_cve_lookup(product: str | None, version: str | None) -> list[CVE]:
 def test_pipeline_end_to_end(tmp_path: Path):
     class _FakeLLM:
         def chat_json(self, prompt, schema, system=None, retries=1):
+            if schema is HardeningAdvice:
+                return HardeningAdvice(
+                    mitigation="Upgrade the service.",
+                    detection="Watch auth logs.",
+                )
             return ReconEnrichment(
                 summary="Exposed service may reveal version-specific weaknesses.",
                 next_steps=["Compare version against vendor advisories"],
@@ -136,3 +142,35 @@ def test_pipeline_end_to_end(tmp_path: Path):
     assert "microsoft-ds" in report_text
     assert "10.10.10.5" in report_text
     assert "CVE-2007-2447" in report_text
+    assert "**Mitigation:** Upgrade the service." in report_text
+    assert "**Detection:** Watch auth logs." in report_text
+
+
+def test_render_shows_mitigation_detection():
+    with_advice = Finding(
+        id="F-0001",
+        host="10.10.10.5",
+        port=22,
+        protocol="tcp",
+        service="ssh",
+        product="OpenSSH",
+        version="8.2p1",
+        source="nmap",
+        mitigation="Disable password auth.",
+        detection="Monitor failed SSH logins.",
+    )
+    without_advice = Finding(
+        id="F-0002",
+        host="10.10.10.5",
+        port=80,
+        protocol="tcp",
+        service="http",
+        source="nmap",
+    )
+
+    report = render_report([with_advice, without_advice])
+
+    assert "**Mitigation:** Disable password auth." in report
+    assert "**Detection:** Monitor failed SSH logins." in report
+    assert report.count("**Mitigation:**") == 1
+    assert report.count("**Detection:**") == 1
