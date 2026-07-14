@@ -56,6 +56,7 @@ nmap.xml ─▶ parser ─▶ ReconAgent ─▶ VulnAnalysisAgent ─▶ Hardeni
 - **Append-only events.jsonl** як спільна шина/аудит усіх агентів.
 
 Архітектура повністю: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Пояснення з нуля (для новачка, з картою «де що лежить»): [docs/how-it-works.md](docs/how-it-works.md).
 
 ---
 
