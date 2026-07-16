@@ -13,10 +13,13 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 
 from agents.pipeline import run_recon_pipeline
 from tools.llm import LLMClient
+from tools.nmap_parser import parse_nmap_xml
 from tools.run_utils import init_run
+from tools.scope import ScopeError, assert_in_scope, load_engagement
 
 
 def main() -> None:
@@ -37,7 +40,26 @@ def main() -> None:
         default=os.environ.get("USER", "unknown"),
         help="Operator name (default: $USER)",
     )
+    parser.add_argument(
+        "--engagement",
+        help="Path to engagement YAML scope definition",
+    )
     args = parser.parse_args()
+
+    if args.engagement:
+        engagement = load_engagement(args.engagement)
+        for target in (t.strip() for t in args.targets.split(",") if t.strip()):
+            try:
+                assert_in_scope(target, engagement)
+            except ScopeError as exc:
+                print(f"ERROR: {exc}", file=sys.stderr)
+                sys.exit(2)
+    else:
+        print(
+            "WARNING: no engagement scope provided -- LAB USE ONLY. "
+            "Do not run against systems you are not authorized to test.",
+            file=sys.stderr,
+        )
 
     run_id, _, _ = init_run(
         scenario=args.scenario,
@@ -48,6 +70,14 @@ def main() -> None:
         runs_subdir=args.runs_dir,
         logs_subdir="logs",
     )
+
+    if args.engagement:
+        for finding in parse_nmap_xml(args.nmap):
+            try:
+                assert_in_scope(finding.host, engagement)
+            except ScopeError as exc:
+                print(f"ERROR: {exc}", file=sys.stderr)
+                sys.exit(2)
 
     report_path = run_recon_pipeline(
         nmap_path=args.nmap,
