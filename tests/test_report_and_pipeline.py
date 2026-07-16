@@ -10,6 +10,7 @@ from agents.pipeline import run_recon_pipeline
 from agents.recon import ReconEnrichment
 from tools.report_render import render_report
 from tools.schemas import CVE, Finding, Severity
+from tools.scope import Engagement
 
 
 @pytest.fixture
@@ -174,3 +175,124 @@ def test_render_shows_mitigation_detection():
     assert "**Detection:** Monitor failed SSH logins." in report
     assert report.count("**Mitigation:**") == 1
     assert report.count("**Detection:**") == 1
+
+
+def test_render_report_engagement_section():
+    engagement = Engagement(
+        client="Acme Corp",
+        authorized_by="Jane Doe",
+        authorization_ref="ENG-2024-001",
+        authorized_targets=["10.10.10.0/24"],
+    )
+    finding = Finding(
+        id="F-0001",
+        host="10.10.10.5",
+        port=22,
+        source="nmap",
+    )
+
+    report_with = render_report([finding], engagement=engagement)
+    assert "## Engagement" in report_with
+    assert "**Client:** Acme Corp" in report_with
+    assert "**Authorized by:** Jane Doe" in report_with
+    assert "**Authorization ref:** ENG-2024-001" in report_with
+    assert "**Window:** open-ended" in report_with
+
+    report_without = render_report([finding])
+    assert "## Engagement" not in report_without
+
+
+def test_render_report_executive_summary_counts():
+    findings = [
+        Finding(id="F-0001", host="10.10.10.1", source="nmap", severity=Severity.CRITICAL),
+        Finding(id="F-0002", host="10.10.10.2", source="nmap", severity=Severity.HIGH),
+        Finding(id="F-0003", host="10.10.10.3", source="nmap", severity=Severity.HIGH),
+        Finding(id="F-0004", host="10.10.10.4", source="nmap", severity=Severity.MEDIUM),
+        Finding(id="F-0005", host="10.10.10.5", source="nmap", severity=Severity.LOW),
+        Finding(id="F-0006", host="10.10.10.6", source="nmap", severity=Severity.INFO),
+    ]
+    report = render_report(findings)
+
+    assert "## Executive Summary" in report
+    assert "**Total findings:** 6" in report
+    assert "critical: 1, high: 2, medium: 1, low: 1, info: 1" in report
+    assert "**Overall risk:** Critical" in report
+
+
+def test_render_report_top_recommendations_dedup_and_limit():
+    findings = [
+        Finding(
+            id=f"F-{idx:04d}",
+            host=f"10.10.10.{idx}",
+            source="nmap",
+            severity=Severity.CRITICAL if idx % 2 == 0 else Severity.HIGH,
+            priority=idx,
+            mitigation=f"Mitigation {idx}",
+        )
+        for idx in range(1, 8)
+    ]
+    # Duplicate the mitigation from F-0001 to ensure deduplication.
+    findings.append(
+        Finding(
+            id="F-0008",
+            host="10.10.10.8",
+            source="nmap",
+            severity=Severity.HIGH,
+            priority=8,
+            mitigation="Mitigation 1",
+        )
+    )
+    report = render_report(findings)
+
+    assert "## Executive Summary" in report
+    for idx in range(1, 6):
+        assert f"{idx}. Mitigation {idx}" in report
+    assert "6. Mitigation 6" not in report
+    assert report.count("1. Mitigation 1") == 1
+
+
+def test_render_report_no_high_priority_mitigations():
+    findings = [
+        Finding(
+            id="F-0001",
+            host="10.10.10.5",
+            source="nmap",
+            severity=Severity.INFO,
+            mitigation="Informative note.",
+        ),
+        Finding(
+            id="F-0002",
+            host="10.10.10.6",
+            source="nmap",
+            severity=Severity.LOW,
+            mitigation="Low priority fix.",
+        ),
+    ]
+    report = render_report(findings)
+
+    assert "_No high-priority mitigations identified._" in report
+
+
+def test_render_report_cvss_column_and_cve_format():
+    with_cvss = Finding(
+        id="F-0001",
+        host="10.10.10.5",
+        port=80,
+        source="nmap",
+        cves=[CVE(id="CVE-2024-0001", cvss=7.5, source="nvd")],
+    )
+    without_cvss = Finding(
+        id="F-0002",
+        host="10.10.10.6",
+        port=443,
+        source="nmap",
+        cves=[CVE(id="CVE-2024-0002", cvss=None, source="nvd")],
+    )
+    report = render_report([with_cvss, without_cvss])
+
+    assert "| Severity | CVSS |" in report
+    assert "| 7.5 |" in report
+    assert "|  |" in report  # empty CVSS cell for the second finding
+    assert "CVE-2024-0001 (CVSS 7.5)" in report
+    assert "CVE-2024-0002" in report
+    assert "CVE-2024-0002 (CVSS" not in report

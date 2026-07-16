@@ -16,6 +16,7 @@ from tools.schemas import Manifest
 
 if TYPE_CHECKING:
     from tools.llm import LLMClient
+    from tools.scope import Engagement
 
 
 def run_recon_pipeline(
@@ -24,6 +25,7 @@ def run_recon_pipeline(
     runs_dir: str | Path = "runs",
     llm: "LLMClient" | None = None,
     cve_lookup=None,
+    engagement: "Engagement" | None = None,
 ) -> Path:
     """Run the full recon pipeline on an nmap XML file.
 
@@ -40,6 +42,7 @@ def run_recon_pipeline(
         runs_dir: Root directory containing run subdirectories.
         llm: Optional LLM client for testing; otherwise the Recon agent creates one.
         cve_lookup: Optional CVE lookup callable. Defaults to ``search_cves``.
+        engagement: Optional signed engagement authorizing the work.
 
     Returns:
         Path to the generated ``report.md``.
@@ -70,6 +73,6 @@ def run_recon_pipeline(
         )
 
     report_path = run_dir / "report.md"
-    write_report(enriched, report_path, manifest=manifest)
+    write_report(enriched, report_path, manifest=manifest, engagement=engagement)
 
     return report_path

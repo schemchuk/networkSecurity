@@ -46,6 +46,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    engagement = None
     if args.engagement:
         engagement = load_engagement(args.engagement)
         for target in (t.strip() for t in args.targets.split(",") if t.strip()):
@@ -84,6 +85,7 @@ def main() -> None:
         run_id=run_id,
         runs_dir=args.runs_dir,
         llm=LLMClient(),
+        engagement=engagement,
     )
 
     print(report_path)
